@@ -20,8 +20,6 @@ module.exports = async function (context, req) {
     context.log(`Fetching news from: ${url}`);
 
     try {
-        // ⭐ 수정: axios 요청 시 responseType을 'arraybuffer'로 유지하고,
-        // iconv-lite로 데이터를 직접 디코딩하도록 변경
         const response = await axios.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -29,13 +27,12 @@ module.exports = async function (context, req) {
             responseType: 'arraybuffer'
         });
 
-        // ⭐ 수정: 받은 데이터(Buffer)를 즉시 'EUC-KR'에서 'UTF-8'로 변환
-        const html = iconv.decode(Buffer.from(response.data), 'EUC-KR').toString('utf-8');
-
+        const html = iconv.decode(Buffer.from(response.data), 'EUC-KR').toString();
         const $ = cheerio.load(html);
         const items = [];
 
-        // 네이버 뉴스 페이지의 기사 목록 선택자 (headline 포함)
+        // ⭐️ 수정: 네이버 뉴스 페이지의 최신 선택자로 수정
+        // ul.type06_headline과 ul.type06에 있는 기사들을 모두 선택
         $('ul.type06_headline li, ul.type06 li').each((index, element) => {
             const $element = $(element);
             const $a = $element.find('dl dt:not(.photo) a');
@@ -43,6 +40,8 @@ module.exports = async function (context, req) {
             if ($a.length > 0) {
                 const title = $a.text().trim();
                 const link = $a.attr('href');
+                
+                // ⭐ 수정: 언론사 정보가 <span> 태그 안에 있을 수 있어 span.writing으로 선택
                 const press = $element.find('dl dd span.writing').text().trim();
                 const time = $element.find('dl dd span.date').text().trim();
 
