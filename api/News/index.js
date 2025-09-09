@@ -20,21 +20,17 @@ module.exports = async function (context, req) {
     context.log(`Fetching news from: ${url}`);
 
     try {
-        // ⭐ 수정: responseType을 'arraybuffer'에서 'stream'으로 변경하여 데이터 처리 방식 개선
-        // axios는 이 방식을 더 안정적으로 지원합니다.
+        // ⭐ 수정: axios 요청 시 responseType을 'arraybuffer'로 유지하고,
+        // iconv-lite로 데이터를 직접 디코딩하도록 변경
         const response = await axios.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             },
-            responseType: 'stream'
+            responseType: 'arraybuffer'
         });
 
-        // ⭐ 수정: 스트림을 버퍼로 변환하고 iconv-lite로 디코딩
-        const chunks = [];
-        response.data.on('data', (chunk) => chunks.push(chunk));
-        await new Promise((resolve) => response.data.on('end', resolve));
-        const buffer = Buffer.concat(chunks);
-        const html = iconv.decode(buffer, 'EUC-KR');
+        // ⭐ 수정: 받은 데이터(Buffer)를 즉시 'EUC-KR'에서 'UTF-8'로 변환
+        const html = iconv.decode(Buffer.from(response.data), 'EUC-KR').toString('utf-8');
 
         const $ = cheerio.load(html);
         const items = [];
