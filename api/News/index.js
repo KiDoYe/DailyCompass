@@ -31,19 +31,18 @@ module.exports = async function (context, req) {
         const $ = cheerio.load(html);
         const items = [];
 
-        // ⭐️ 수정: 네이버 뉴스 페이지의 최신 선택자로 수정
-        // ul.type06_headline과 ul.type06에 있는 기사들을 모두 선택
-        $('ul.type06_headline li, ul.type06 li').each((index, element) => {
+        // ⭐️ 수정: 뉴스 목록을 가져오는 선택자를 최신 네이버 HTML 구조에 맞게 수정했습니다.
+        $('ul.type06_headline li, ul.type11 li').each((index, element) => {
             const $element = $(element);
-            const $a = $element.find('dl dt:not(.photo) a');
+            const $a = $element.find('dt:not(.photo) a');
             
             if ($a.length > 0) {
                 const title = $a.text().trim();
                 const link = $a.attr('href');
                 
-                // ⭐ 수정: 언론사 정보가 <span> 태그 안에 있을 수 있어 span.writing으로 선택
-                const press = $element.find('dl dd span.writing').text().trim();
-                const time = $element.find('dl dd span.date').text().trim();
+                // 언론사 정보가 <span> 태그 안에 있을 수 있어 span.writing으로 선택
+                const press = $element.find('span.writing').text().trim();
+                const time = $element.find('span.date').text().trim();
 
                 items.push({
                     title,
