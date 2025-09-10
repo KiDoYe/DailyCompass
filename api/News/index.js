@@ -6,7 +6,7 @@ module.exports = async function (context, req) {
     context.log('NewsAPI 호출을 시작합니다.');
 
     // 연합뉴스(yonhapnews.co.kr) 도메인을 지정하여 뉴스 가져오기
-    const url = `https://newsapi.org/v2/everything?domains=yonhapnews.co.kr&apiKey=${NEWSAPI_KEY}&language=ko`;
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent('대한민국')}&apiKey=${NEWSAPI_KEY}&language=ko`;
 
     try {
         const response = await axios.get(url);
