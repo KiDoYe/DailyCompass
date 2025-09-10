@@ -1,5 +1,5 @@
 // NewsList.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 
 const API_BASE = "/api/news";
 
@@ -9,8 +9,8 @@ export default function NewsList({ date }) {
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(4);
 
-  // API 호출 함수를 별도로 분리하여 재사용성을 높입니다.
-  const fetchNews = async () => {
+  // ⭐️ useCallback을 사용하여 fetchNews 함수를 메모이제이션
+  const fetchNews = useCallback(async () => {
     setPending(true);
     setError("");
 
@@ -31,18 +31,15 @@ export default function NewsList({ date }) {
     } finally {
       setPending(false);
     }
-  };
+  }, [date]); // ⭐️ date가 변경될 때만 fetchNews 함수를 새로 만듦
 
   useEffect(() => {
-    // 1. 컴포넌트 마운트 시 즉시 한 번 호출
     fetchNews();
 
-    // 2. 5분마다 API를 호출하도록 설정
-    const intervalId = setInterval(fetchNews, 300000); // 300000ms = 5분
+    const intervalId = setInterval(fetchNews, 300000); // 5분마다 호출
 
-    // 3. 컴포넌트가 언마운트될 때 인터벌을 정리하여 메모리 누수를 방지
     return () => clearInterval(intervalId);
-  }, [date]); // date가 변경될 때마다 인터벌이 재설정됩니다.
+  }, [fetchNews]); // ⭐️ useEffect의 의존성 배열에 fetchNews를 포함
 
   const visibleItems = useMemo(
     () => items.slice(0, visibleCount),
@@ -58,13 +55,11 @@ export default function NewsList({ date }) {
 
       <div className="news-content">
         {pending && <div className="news-loading">불러오는 중…</div>}
-
         {!pending && error && (
           <div className="news-error">
             <div style={{ marginBottom: 8 }}>오류: {error}</div>
           </div>
         )}
-
         {!pending && !error && (
           <>
             {visibleItems.length === 0 ? (
@@ -94,7 +89,6 @@ export default function NewsList({ date }) {
           </>
         )}
       </div>
-
       {canLoadMore && !pending && !error && (
         <button
           className="load-more-btn"
