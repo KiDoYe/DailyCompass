@@ -6,8 +6,9 @@ const NEWSAPI_KEY = process.env.NEWSAPI_KEY;
 module.exports = async function (context, req) {
     context.log('NewsAPI 호출을 시작합니다.');
 
-    const query = 'IT'; // 검색어를 원하는 주제로 변경하세요.
-    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&apiKey=${NEWSAPI_KEY}&language=ko`;
+    // v2/everything 대신 v2/top-headlines 엔드포인트 사용
+    // top-headlines는 query 파라미터가 필수가 아닙니다.
+    const url = `https://newsapi.org/v2/top-headlines?country=kr&apiKey=${NEWSAPI_KEY}`;
 
     try {
         const response = await axios.get(url);
@@ -16,8 +17,7 @@ module.exports = async function (context, req) {
             title: article.title,
             link: article.url,
             press: article.source.name,
-            // NewsAPI는 'publishedAt'을 제공하며, 필요에 따라 포맷을 변환할 수 있습니다.
-            time: article.publishedAt 
+            time: article.publishedAt
         }));
 
         context.res = {

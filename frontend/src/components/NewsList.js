@@ -1,51 +1,49 @@
+// NewsList.js
 import React, { useEffect, useMemo, useState } from "react";
 
-// 백엔드 API 서버의 전체 주소를 명시적으로 지정합니다.
 const API_BASE = "/api/news";
 
 export default function NewsList({ date }) {
   const [items, setItems] = useState([]);
   const [pending, setPending] = useState(true);
   const [error, setError] = useState("");
-  const [visibleCount, setVisibleCount] = useState(4); // 처음 4개만 표시
+  const [visibleCount, setVisibleCount] = useState(4);
 
-  useEffect(() => {
-    let alive = true;
+  // API 호출 함수를 별도로 분리하여 재사용성을 높입니다.
+  const fetchNews = async () => {
     setPending(true);
     setError("");
-    setVisibleCount(4); // 날짜가 변경될 때마다 표시 개수 초기화
 
-    const url = date
-      ? `${API_BASE}?date=${encodeURIComponent(date)}`
-      : `${API_BASE}`;
+    const url = date ? `${API_BASE}?date=${encodeURIComponent(date)}` : `${API_BASE}`;
 
-    fetch(url)
-      .then(async (res) => {
-        const ct = res.headers.get("content-type") || "";
-        const data = ct.includes("application/json")
-          ? await res.json().catch(() => ({}))
-          : {};
-        if (!res.ok) {
-          const msg = data.error ? `${data.error}` : `HTTP ${res.status}`;
-          const err = new Error(msg);
-          err.status = res.status;
-          throw err;
-        }
-        const list = Array.isArray(data.items) ? data.items : [];
-        if (alive) setItems(list);
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setError(err.message || "뉴스 로딩 실패");
-      })
-      .finally(() => alive && setPending(false));
+    try {
+      const res = await fetch(url);
+      const ct = res.headers.get("content-type") || "";
+      const data = ct.includes("application/json") ? await res.json() : {};
 
-    return () => {
-      alive = false;
-    };
-  }, [date]);
+      if (!res.ok) {
+        const msg = data.error ? `${data.error}` : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      setError(err.message || "뉴스 로딩 실패");
+    } finally {
+      setPending(false);
+    }
+  };
 
-  // 화면에 보여줄 항목들
+  useEffect(() => {
+    // 1. 컴포넌트 마운트 시 즉시 한 번 호출
+    fetchNews();
+
+    // 2. 5분마다 API를 호출하도록 설정
+    const intervalId = setInterval(fetchNews, 300000); // 300000ms = 5분
+
+    // 3. 컴포넌트가 언마운트될 때 인터벌을 정리하여 메모리 누수를 방지
+    return () => clearInterval(intervalId);
+  }, [date]); // date가 변경될 때마다 인터벌이 재설정됩니다.
+
   const visibleItems = useMemo(
     () => items.slice(0, visibleCount),
     [items, visibleCount]
@@ -74,7 +72,7 @@ export default function NewsList({ date }) {
             ) : (
               <ul className="news-list">
                 {visibleItems.map((n) => (
-                  <li key={n.aid || n.link} className="news-item">
+                  <li key={n.link} className="news-item">
                     <a
                       className="news-title"
                       href={n.link}
@@ -110,4 +108,3 @@ export default function NewsList({ date }) {
     </section>
   );
 }
-
